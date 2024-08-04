@@ -1,13 +1,15 @@
 import Todo from "./components/Todo";
 import Form from "./components/Form";
 import FilterButton from "./components/FilterButton";
-import { useState } from "react";
 import { nanoid } from "nanoid";
+import { useState, useRef, useEffect } from "react";
 
 function App(props) {
 
   const [tasks, setTasks] = useState(props.tasks);
   const [filter, setFilter] = useState("All");
+  const listHeadingRef = useRef(null);
+
   const FILTER_MAP = {
     All: () => true,
     Active: (task) => !task.completed,
@@ -16,13 +18,34 @@ function App(props) {
   const FILTER_NAMES = Object.keys(FILTER_MAP);
   const filterList = FILTER_NAMES.map((name) => (
     <FilterButton
-    key={name}
-    name={name}
-    isPressed={name === filter}
-    setFilter={setFilter}
-  />
+      key={name}
+      name={name}
+      isPressed={name === filter}
+      setFilter={setFilter}
+    />
   ));
 
+  function usePrevious(value) {
+    const ref = useRef();
+    useEffect(() => {
+      ref.current = value;
+    });
+    return ref.current;
+  }
+
+  const prevTaskLength = usePrevious(tasks.length);
+
+  useEffect(() => {
+    if (tasks.length < prevTaskLength) {
+      listHeadingRef.current.focus();
+    }
+  }, [tasks.length, prevTaskLength]);
+
+  useEffect(() => {
+    if (tasks.length < prevTaskLength) {
+      console.log("focus on list heading");
+    }
+  });
 
   function addtask(name) {
     const newTask = { id: `todo-${nanoid()}`, name, completed: false };
@@ -60,20 +83,21 @@ function App(props) {
     setTasks(editedTaskList);
   }
   const taskList = tasks
-  .filter(FILTER_MAP[filter])
-  .map((task) => (
-    <Todo
-      id={task.id}
-      name={task.name}
-      completed={task.completed}
-      toggleTaskCompleted={toggleTaskCompleted}
-      deleteTask={deleteTask}
-      editTask={editTask}
-    />
-  ));
+    .filter(FILTER_MAP[filter])
+    .map((task) => (
+      <Todo
+        id={task.id}
+        name={task.name}
+        completed={task.completed}
+        toggleTaskCompleted={toggleTaskCompleted}
+        deleteTask={deleteTask}
+        editTask={editTask}
+      />
+    ));
 
   const tasksNoun = taskList.length !== 1 ? "tasks" : "task";
   const headingText = `${taskList.length} ${tasksNoun} remaining`;
+
 
   return (
     <div className="todoapp stack-large">
@@ -86,7 +110,9 @@ function App(props) {
 
       </div>
 
-      <h2 id="list-heading">{headingText}</h2>
+      <h2 id="list-heading" tabIndex="-1" ref={listHeadingRef}>
+        {headingText}
+      </h2>
       <ul
         role="list"
         className="todo-list stack-large stack-exception"

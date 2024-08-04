@@ -1,9 +1,10 @@
 import React from "react";
-import { useState } from "react";
+import { useState} from "react";
 
 function Form(props) {
 
     const [name, setName] = useState("");
+    
 
     function handleChange(event) {
         setName(event.target.value);
@@ -30,6 +31,7 @@ function Form(props) {
                 autoComplete="off"
                 value={name}
                 onChange={handleChange}
+                
             />
             <button type="submit" className="btn btn__primary btn__lg">
                 Add
