@@ -6,14 +6,31 @@ import { useState, useRef, useEffect } from "react";
 
 function App(props) {
 
-  const [tasks, setTasks] = useState(props.tasks);
+  const [tasks, setTasks] = useState([]);
   const [filter, setFilter] = useState("All");
+  const [editCount,setEditCount]= useState(0);
+  
   const listHeadingRef = useRef(null);
+
+  useEffect(() => {
+    fetch("http://localhost:8080/todo/all").then((response) => {     
+      return response.json();
+    }).then((todos) => {
+      setTasks(todos);
+      //console.log(todos);
+    })
+}, [editCount])
+  
+  function addtask(name) {
+    fetch("http://localhost:8080/todo/add?name="+name+"&isCompleted=false",{method: 'POST'}).then(() => {
+      setEditCount(editCount+1);    
+    })
+  }
 
   const FILTER_MAP = {
     All: () => true,
-    Active: (task) => !task.completed,
-    Completed: (task) => task.completed,
+    Active: (task) => !task.iscompleted,
+    Completed: (task) => task.iscompleted,
   };
   const FILTER_NAMES = Object.keys(FILTER_MAP);
   const filterList = FILTER_NAMES.map((name) => (
@@ -47,40 +64,40 @@ function App(props) {
     }
   });
 
-  function addtask(name) {
-    const newTask = { id: `todo-${nanoid()}`, name, completed: false };
-    setTasks([...tasks, newTask]);
-  }
+
 
   function deleteTask(id) {
-    const remainingTasks = tasks.filter((task) => id !== task.id);
-    setTasks(remainingTasks);
+    //const remainingTasks = tasks.filter((task) => id !== task.id);
+    //setTasks(remainingTasks);
+    //const deletedTask = tasks.filter((task) => id == task.id);
+    fetch("http://localhost:8080/todo/delete?id="+id, 
+      {method: 'post'}).then(() => {
+      setEditCount(editCount+1);    
+    })
   }
 
   function toggleTaskCompleted(id) {
-    const updatedTasks = tasks.map((task) => {
-      // if this task has the same ID as the edited task
-      if (id === task.id) {
-        // use object spread to make a new object
-        // whose `completed` prop has been inverted
+    /*const updatedTasks = tasks.map((task) => {
+      
+      if (id === task.id) {      
         return { ...task, completed: !task.completed };
       }
       return task;
     });
-    setTasks(updatedTasks);
+    setTasks(updatedTasks);*/
+    fetch("http://localhost:8080/todo/changecompleted?id="+id,
+       {method: 'post'}).then(() => {
+      setEditCount(editCount+1);    
+    })
   }
 
   function editTask(id, newName) {
-    const editedTaskList = tasks.map((task) => {
-      // if this task has the same ID as the edited task
-      if (id === task.id) {
-        // Copy the task and update its name
-        return { ...task, name: newName };
-      }
-      // Return the original task if it's not the edited task
-      return task;
-    });
-    setTasks(editedTaskList);
+    
+    fetch("http://localhost:8080/todo/update?id="+id+"&name="+newName, 
+      {method: 'post'}).then(() => {
+        setEditCount(editCount+1);    
+      })   
+
   }
   const taskList = tasks
     .filter(FILTER_MAP[filter])
@@ -88,7 +105,8 @@ function App(props) {
       <Todo
         id={task.id}
         name={task.name}
-        completed={task.completed}
+        completed={task.iscompleted}
+        key={task.id}
         toggleTaskCompleted={toggleTaskCompleted}
         deleteTask={deleteTask}
         editTask={editTask}
